@@ -1,27 +1,27 @@
 import os
-import joblib
 import pandas as pd
-import pytest
-from train import clf, X_test, y_test, acc
+from train import train_and_evaluate
 
-# === Test 1: Check data file exists ===
-def test_data_file_exists():
-    assert os.path.exists("data/train.csv"), "Data file does not exist."
+MODEL_PATH = "model/test_model.joblib"
+METRICS_PATH = "metrics/test_metrics.csv"
 
-    # === Test 2: Check model pipeline ===
-def test_pipeline_object():
-    assert clf is not None, "Model pipeline is not created."
-    assert hasattr(clf, "predict"), "Pipeline does not have predict method."
+def setup_module(module):
+    # Train model before running tests
+    train_and_evaluate(MODEL_PATH, METRICS_PATH)
 
-                    # === Test 3: Model accuracy threshold ===
-def test_model_accuracy():
-    assert acc > 0.6, f"Model accuracy is too low: {acc}"
+def test_model_file_exists():
+    assert os.path.exists(MODEL_PATH), "Model file was not created."
 
-                            # === Test 4: Model file saved ===
-def test_model_file():
-    assert os.path.exists("model/titanic_model.joblib"), "Model file not saved."
-                              # === Test 5: Predictions shape ===
-def test_prediction_shape():
-    preds = clf.predict(X_test)
-    assert len(preds) == len(y_test), "Prediction length does not match test data."
+def test_metrics_file_exists():
+    assert os.path.exists(METRICS_PATH), "Metrics file was not created."
+
+def test_metrics_format():
+    df = pd.read_csv(METRICS_PATH)
+    expected_cols = {"accuracy", "precision", "recall", "f1"}
+    assert set(df.columns) == expected_cols, f"Metrics CSV columns are wrong: {df.columns}"
+
+def test_accuracy_threshold():
+    df = pd.read_csv(METRICS_PATH)
+    acc = df["accuracy"].iloc[0]
+    assert acc > 0.6, f"Accuracy too low: {acc}"
 

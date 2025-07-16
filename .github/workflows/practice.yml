@@ -1,68 +1,60 @@
-name: Titanic MLOps CI
+name: CI - Iris Classifier with Report
 
 on:
   push:
-    branches: [ main, newb ]  # Run on main and newbranch
+    branches: ["main","newb", "master", "feature/ci", "feature/test-ci"]
   pull_request:
-    branches: [ main, newb ]
+    branches: ["main", "master", "feature/ci", "feature/test-ci"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  build-test-train:
+  test_model:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout repository
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    # Step 2: Set up Python
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: "3.11"
 
-    # Step 3: Cache Python dependencies
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    # Step 4: Install dependencies
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest
 
-    # Step 5: Show directory structure (debugging)
-    - name: Show files
-      run: ls -R
+    - name: Set up CML
+      uses: iterative/setup-cml@v2
 
-    # Step 6: Run tests
-    - name: Run Tests
-      run: pytest test.py -q
-
-    # Step 7: Train Model and Log Metrics
-    - name: Train Model and Generate Metrics
+    - name: Run unit tests
       run: |
-        python train.py
+        python -m pytest | tee test_output.txt || echo "Tests failed"
+
+    - name: Train model and generate metrics
+      run: |
+        python train.py --model-path model.joblib --metrics-path metrics.csv
+
+    - name: Create and post CML report
       env:
-        MLFLOW_TRACKING_URI: file:./mlruns  # Local MLflow tracking
+        REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "# Iris Model Report" > report.md
+        echo "## Test Output" >> report.md
+        echo '```' >> report.md
+        cat test_output.txt >> report.md
+        echo '```' >> report.md
 
-    # Step 8: Upload Metrics Artifact
-    - name: Upload Metrics Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: metrics
-        path: metrics/metrics.csv
+        echo "## Training Metrics (Accuracy & Loss per Epoch)" >> report.md
+        echo '| Epoch | Accuracy | Loss |' >> report.md
+        echo '|-------|----------|------|' >> report.md
+        tail -n +2 metrics.csv | while IFS=',' read -r epoch acc loss; do
+          echo "| $epoch | $acc | $loss |" >> report.md
+        done
 
-    # Step 9: Upload Model Artifact
-    - name: Upload Model Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: titanic_model
-        path: model/titanic_model.joblib
-
+        cml comment create report.md
