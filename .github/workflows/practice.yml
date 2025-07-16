@@ -2,9 +2,9 @@ name: Titanic MLOps CI
 
 on:
   push:
-    branches: [ main, newbranch ]  # Run on main and newbranch
+    branches: [ main, newb ]  # Run on main and newbranch
   pull_request:
-    branches: [ main, newbranch ]
+    branches: [ main, newb ]
 
 jobs:
   build-test-train:
