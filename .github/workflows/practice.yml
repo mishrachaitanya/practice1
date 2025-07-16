@@ -43,7 +43,7 @@ jobs:
 
     # Step 6: Run tests
     - name: Run Tests
-      run: pytest --maxfail=1 --disable-warnings -q
+      run: pytest test.py -q
 
     # Step 7: Train Model and Log Metrics
     - name: Train Model and Generate Metrics
