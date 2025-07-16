@@ -1,0 +1,46 @@
+name: Titanic MLOps CI
+
+on:
+  push:
+    branches: [ main , newb]
+  pull_request:
+    branches: [ main, newb ]
+
+jobs:
+  build-test-train:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest
+
+    - name: Run Tests
+      run: |
+        pytest tests/ --maxfail=1 --disable-warnings -q
+
+    - name: Train Model and Log Metrics
+      run: |
+        python train.py
+
+    - name: Upload Metrics Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: metrics
+        path: metrics/metrics.csv
+
+    - name: Upload Model Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: titanic_model
+        path: model/titanic_model.joblib

@@ -62,3 +62,16 @@ os.makedirs("model", exist_ok=True)
 joblib.dump(clf, "model/titanic_model.joblib")
 print("Model saved to model/titanic_model.joblib")
 
+if __name__ == "__main__":
+    # Train and save model
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    print(f"Validation Accuracy: {acc:.4f}")
+
+    os.makedirs("model", exist_ok=True)
+    joblib.dump(clf, "model/titanic_model.joblib")
+    print("Model saved to model/titanic_model.joblib")
+
+
+
